@@ -2,6 +2,7 @@ import os
 import re
 import time
 import requests
+import asyncio
 import schedule
 import logging
 from bs4 import BeautifulSoup
@@ -83,8 +84,9 @@ def scrape_amazon_deals():
     return deals
 
 # ✅ Function to Send Deals to Telegram Channel
-def send_deals_to_telegram():
-    """Fetches top deals and sends them to Telegram."""
+# ✅ Async Function to Send Deals to Telegram
+async def send_deals_to_telegram():
+    """Fetches deals and sends them to the Telegram channel asynchronously."""
     bot = Bot(token=BOT_TOKEN)
     deals = scrape_amazon_deals()
 
@@ -101,18 +103,18 @@ def send_deals_to_telegram():
         )
 
         try:
-            bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="Markdown", disable_web_page_preview=True)
+            await bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="Markdown", disable_web_page_preview=True)
             logging.info(f"✅ Sent deal: {deal['title']}")
-            time.sleep(2)  # ✅ Avoid hitting Telegram rate limits
+            await asyncio.sleep(2)  # ✅ Prevent hitting Telegram rate limits
 
         except Exception as e:
             logging.error(f"❌ Failed to send message: {e}")
 
-# ✅ Schedule Task to Run Every 6 Hours
-schedule.every(5).minutes.do(send_deals_to_telegram)
+# ✅ Schedule Task to Run Every 5 Minutes
+schedule.every(5).minutes.do(lambda: asyncio.run(send_deals_to_telegram()))
 
 # ✅ Run the Bot
-logging.info("🤖 Bot is running... Fetching deals every 5 Minutes...")
+logging.info("🤖 Bot is running... Fetching deals every 5 minutes...")
 while True:
     schedule.run_pending()
     time.sleep(60)
